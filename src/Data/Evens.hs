@@ -18,14 +18,14 @@ import LocalPrelude
 
 {-@ weAreEven :: [Even] @-}
 weAreEven :: [Int]
-weAreEven = [negate 10, negate 4, 0, 2, 666]
+weAreEven = [10, 4, 0, 2, 666]
 
 {-@ notEven :: Even @-}
 notEven :: Int
-notEven = 7
+notEven = 6
 
-{-@ isEven :: n:Nat -> {v:Bool | ((Prop v) <=> (n mod 2 = 0))} @-}   
-isEven   :: Int -> Bool 
+{-@ isEven :: n:Nat -> {v:Bool | ((Prop v) <=> (n mod 2 = 0))} @-}
+isEven   :: Int -> Bool
 isEven 0 = True
 isEven 1 = False
 isEven n = not (isEven (n-1))

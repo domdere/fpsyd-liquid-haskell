@@ -33,3 +33,6 @@ revealjs/index.html
 
 # beamer output
 beamer/talk.pdf
+
+# liquid haskell artifacts
+.liquid/
