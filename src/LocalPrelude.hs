@@ -15,6 +15,8 @@ module LocalPrelude (
     -- * Types
     ,   Bool(..)
     ,   Int
+    -- * Operators
+    ,   (.)
     -- * Functions
     ,   not
     ,   otherwise
