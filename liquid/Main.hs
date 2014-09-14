@@ -3,16 +3,20 @@ module Main where
 
 import Prelude ( Eq(..), Bool, String, ($), (.), (&&) )
 
+import Build_liquid ( specificPackageDBs )
 import Control.Applicative
 import Control.Monad
-import Data.List
+import Data.List ( (++), concat, filter, intersperse, isSuffixOf, lines, notElem )
 import System.Directory
 import System.FilePath
 import System.IO ( IO, print )
 import System.Process ( readProcess )
 
+packageDBOpts :: [String]
+packageDBOpts = (("-g" :). intersperse "-g". fmap ("-package-db=" ++)) specificPackageDBs
+
 liquidOpts :: [FilePath]
-liquidOpts = ["--idirs=src"]
+liquidOpts = ["--idirs=src"] ++ packageDBOpts
 
 -- the list of all file paths to search for source files
 sourceDirs :: [FilePath]
@@ -34,7 +38,7 @@ main = getSources >>= verify
 
 getFilesAndDirectories :: FilePath -> IO ([FilePath], [FilePath])
 getFilesAndDirectories dir = do
-    c <- map (dir </>) . filter (`notElem` ["..", "."]) <$> getDirectoryContents dir
+    c <- fmap (dir </>) . filter (`notElem` ["..", "."]) <$> getDirectoryContents dir
     (,) <$> filterM doesDirectoryExist c <*> filterM doesFileExist c
 
 isSourceFile :: FilePath -> Bool
