@@ -92,7 +92,7 @@ fromList (x:xs) = Many (x :| xs)
 mapNE :: (a -> b) -> NonEmpty a -> NonEmpty b
 mapNE f (x :| xs) = (f x) :| (map f xs)
 
-{-@ mapOL :: (a -> b) -> xs : OrdList a -> OrdListN b {(olen xs)} @-}
+{- mapOL :: (a -> b) -> xs : OrdList a -> OrdListN b {(olen xs)} -}
 mapOL :: (a -> b) -> OrdList a -> OrdList b
 mapOL _ Empty       = Empty
 mapOL f (One x)     = One (f x)

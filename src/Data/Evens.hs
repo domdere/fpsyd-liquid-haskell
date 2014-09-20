@@ -46,4 +46,3 @@ shift xs k = [x + k | x <- xs]
 {-@ double :: [Nat] -> [Even] @-}
 double :: [Int] -> [Int]
 double xs = [x + x | x <- xs]
-

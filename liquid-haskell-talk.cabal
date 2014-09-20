@@ -47,6 +47,7 @@ library
     other-modules:      LocalPrelude
                     ,   Data.Evens
                     ,   Data.OrdList
+                    ,   Data.RedBlack
 
     default-extensions: NoImplicitPrelude
                     ,   Safe

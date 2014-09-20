@@ -10,12 +10,15 @@
 -------------------------------------------------------------------
 module LocalPrelude (
     -- * Type Classes
-        Num(..)
+        Eq(..)
+    ,   Num(..)
     ,   Ord(..)
+    ,   Show(..)
     -- * Types
     ,   Bool(..)
     ,   Int
     -- * Operators
+    ,   ($)
     ,   (.)
     -- * Functions
     ,   not
