@@ -45,9 +45,8 @@ library
     exposed-modules:    Talk
 
     other-modules:      LocalPrelude
+                    ,   Data.Binomial
                     ,   Data.Evens
-                    ,   Data.OrdList
-                    ,   Data.RedBlack
 
     default-extensions: NoImplicitPrelude
                     ,   Safe
