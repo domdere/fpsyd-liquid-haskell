@@ -38,13 +38,13 @@ data BinomialTreeList a =
 
 @-}
 
-{-@ type BinomialTreeListN a N = {t : BinomialTree a | (listlen t) = N } @-}
+{-@ type BinomialTreeListN a N = {t : BinomialTreeList a | (listlen t) = N } @-}
 
 {-@
 
     data BinomialTreeList a =
             Nil
-        |   Cons (ts :: BinomialTreeList a) (t :: BinomialTreeN a {(listlen ts) + 1})
+        |   Cons (ts :: BinomialTreeList a) (t :: BinomialTreeN a {(listlen ts)})
 
 @-}
 
@@ -80,9 +80,9 @@ singletonTree x = BinomialTree 0 x Nil
 -- you still have to rely on building it up from `singletonTree` and `link`
 -- hence this doesnt get flagged as unsafe.
 --
-{-@ badTree :: a -> BinomialTreeN a {2} @-}
-badTree :: a -> BinomialTree a
-badTree x = BinomialTree 2 x (Cons (Cons Nil (singletonTree x)) (singletonTree x))
+{-% badTree :: a -> BinomialTreeN a {2} %-}
+--badTree :: a -> BinomialTree a
+--badTree x = BinomialTree 2 x (Cons (Cons Nil (singletonTree x)) (singletonTree x))
 
 {-@ link :: (Ord a) => w : BinomialTree a -> z : BinomialTreeN a {(binTreeRank w)} -> BinomialTreeN a {1 + (binTreeRank w)} @-}
 link :: (Ord a) => BinomialTree a -> BinomialTree a -> BinomialTree a
