@@ -25,30 +25,7 @@ import LocalPrelude
 
 import Data.Bool ( (&&) )
 
-data BinomialTreeList a =
-        Nil
-    |   Cons (BinomialTreeList a) (BinomialTree a)
-        deriving (Show, Eq)
-
-{-@
-
-    measure listlen :: BinomialTreeList a -> Int
-    listlen (Nil)       = 0
-    listlen (Cons xs x) = 1 + (listlen xs)
-
-@-}
-
-{-@ type BinomialTreeListN a N = {t : BinomialTree a | (listlen t) = N } @-}
-
-{-@
-
-    data BinomialTreeList a =
-            Nil
-        |   Cons (ts :: BinomialTreeList a) (t :: BinomialTreeN a {(listlen ts) + 1})
-
-@-}
-
-data BinomialTree a = BinomialTree Int a (BinomialTreeList a) deriving (Show, Eq)
+data BinomialTree a = BinomialTree Int a [BinomialTree a] deriving (Show, Eq)
 
 {-@
 
@@ -63,7 +40,7 @@ data BinomialTree a = BinomialTree Int a (BinomialTreeList a) deriving (Show, Eq
 {-@
 
     data BinomialTree [binTreeRank] a =
-        BinomialTree (r :: Int) (x :: a) (cs :: BinomialTreeListN a {r})
+        BinomialTree (r :: Int) (x :: a) (cs :: ListN (BinomialTree a) {r})
 
 @-}
 
@@ -73,7 +50,7 @@ rank (BinomialTree r _ _) = r
 
 {-@ singletonTree :: a -> BinomialTreeN a {0} @-}
 singletonTree :: a -> BinomialTree a
-singletonTree x = BinomialTree 0 x Nil
+singletonTree x = BinomialTree 0 x []
 
 -- |
 -- the decreasing rank invariant isnt enforced
@@ -82,13 +59,13 @@ singletonTree x = BinomialTree 0 x Nil
 --
 {-@ badTree :: a -> BinomialTreeN a {2} @-}
 badTree :: a -> BinomialTree a
-badTree x = BinomialTree 2 x (Cons (Cons Nil (singletonTree x)) (singletonTree x))
+badTree x = BinomialTree 2 x [singletonTree x, singletonTree x]
 
 {-@ link :: (Ord a) => w : BinomialTree a -> z : BinomialTreeN a {(binTreeRank w)} -> BinomialTreeN a {1 + (binTreeRank w)} @-}
 link :: (Ord a) => BinomialTree a -> BinomialTree a -> BinomialTree a
 link w@(BinomialTree rw x ws) z@(BinomialTree rz y zs)
-    | x < y     = BinomialTree (rw + 1) x (Cons ws z)
-    | otherwise = BinomialTree (rz + 1) y (Cons zs w)
+    | x < y     = BinomialTree (rw + 1) x (z : ws)
+    | otherwise = BinomialTree (rz + 1) y (w : zs)
 
 -- helpers
 
