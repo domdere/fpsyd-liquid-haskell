@@ -3,11 +3,58 @@
 % 24 Sept, 2014
 
 Partiality
-==========================
+==========
 
 Module Header
 
 >   module Talk where
+>   import Prelude ( undefined )
+
+-----------
+
+>   head' :: [a] -> a
+>   head' (x : xs)  = x
+>   head' []        = undefined
+
+Whats the problem?
+------------------
+
+"Just don't give it an empty list."
+    - Some Pragmatic Programmer
+
+-----------------
+
+Partial functions are convenient to write, inconvenient to trust.
+
+Total functions give complete coverage of the domains they promise to cover.
+
+Non-surjectivity
+============
+
+-----------
+
+The image of a surjective function is equal to its codomain.
+
+The particular case of interest though is just unused patterns in the output type.
+
+This sometimes means that functions called further down the chain are forced to deal with patterns that wouldn't
+logically be possible, maybe partial functions.
+
+-----------
+
+``` Haskell
+data Error = InsertError | UpdateError
+
+insert :: (MonadIO m) => a -> EitherT Error m a
+insert x = do
+    insertRest <- realInsert x
+    return $ maybe (left InsertError) pure insertRest
+
+insertErrorHandler :: (MonadIO m) => Error -> m a
+insertErrorHandler (InsertError) = someContextuallyValidResponse
+insertErrorHandler (UpdateError) = somethingJustNeedsToBeHere
+```
+
 
 Pandoc
 ======
