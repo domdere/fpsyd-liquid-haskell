@@ -12,9 +12,15 @@ Module Header
 
 -----------
 
->   head' :: [a] -> a
->   head' (x : xs)  = x
->   head' []        = undefined
+``` Haskell
+head' :: [a] -> a
+head' (x : _)   = x
+head' []        = undefined
+
+tail' :: [a] -> [a]
+tail' (_ : xs)  = xs
+tail' []        = undefined
+```
 
 Whats the problem?
 ------------------
@@ -27,6 +33,126 @@ Whats the problem?
 Partial functions are convenient to write, inconvenient to trust.
 
 Total functions give complete coverage of the domains they promise to cover.
+
+The Rabbit Hole
+===============
+
+Adulterate the output
+---------------------
+
+``` Haskell
+head' :: [a] -> Maybe a
+head' (x : _)   = Just x
+head' []        = Nothing
+
+tail' :: [a] -> Maybe [a]
+tail' (_ : xs)  = Just xs
+tail' []        = Nothing
+```
+
+------------------
+
+When we qualify our types we tend to adulterate them
+
+------------------
+
+``` Haskell
+data Maybe a =
+        Nothing
+    |   Just a
+```
+
+-----------------
+
+``` Haskell
+data Either a b =
+        Left a
+    |   Right b
+```
+
+-----------------
+
+``` Haskell
+data [] a =
+        []
+    |   a : [a]
+```
+
+----------------
+
+``` Haskell
+data State s a = State { runState :: s -> (a, s) }
+```
+
+An exception
+------------
+
+``` Haskell
+data Const r a = Const { runConst :: r }
+```
+
+-----------
+
+Abstractions to help us manage these types:
+
+``` Haskell
+class Applicative f where
+    pure :: a -> f a
+    (<*>) :: f (a -> b) -> f a -> f b
+
+class Monad m where
+    return :: a -> m a
+    (>>=) :: m a -> (a -> m b) -> m b
+```
+
+Red Black Trees
+===============
+
+Tree
+---------------
+
+``` Haskell
+data Tree a =
+        Leaf
+    |   Node a (Tree a) (Tree a)
+```
+
+Red Black Tree
+--------------
+
+``` Haskell
+data Colour =
+        Red
+    |   Black
+
+data RedBlack a =
+        Leaf
+    |   Node Colour a (RedBlack a) (RedBlack a)
+```
+
+-------------
+
+Erm, just be careful about breaking the invariants!
+
+1.  Red nodes can't have red children (leaf nodes are considered to be black).
+2.  All paths from the root to the leaf nodes must have the same number of black nodes
+
+There's a whole bunch of values of type `RedBlack a` that will never come up but must still
+be handled in our functions.
+
+-------------
+
+Let's refine for Invariant 1:
+
+``` Haskell
+data BlackNode a =
+        Leaf
+    |   BlackNode a (RedBlack a) (RedBlack a)
+
+data RedNode a = RedNode a (BlackNode a) (BlackNode a)
+
+data RedBlack a = R (RedNode a) | B (BlackNode a)
+```
 
 Non-surjectivity
 ============
