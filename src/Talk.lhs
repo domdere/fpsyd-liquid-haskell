@@ -1,21 +1,13 @@
-% Slides in Literate Haskell with Pandoc
-% Dom De Re
-% 7 July, 2014
+% Refined Types
+% Dom De Re (fp-syd)
+% 24 Sept, 2014
 
-Slides in Literate Haskell
+Partiality
 ==========================
 
 Module Header
 
-We want the module header to get compiled, but we dont want it to appear in the slides.
-
-If the slides are marked up with `pandoc`, we can use the `--slide-level` parameter to set the slide level to 2.
-
-This means level 1 headers form title slides and any content following them is ignored, only content following level 2 headers is included.
-
 >   module Talk where
-
-In **reveal.js** slides, this will also mean that level 1 headers build slides horizontally, while level 2 headers build slides vertically..
 
 Pandoc
 ======
