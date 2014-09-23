@@ -3,6 +3,8 @@ SHELL := bash
 pandoc := pandoc
 slide_src := src/Talk.lhs
 
+input_format := markdown+lhs
+
 # reveal.js parameters
 reveal_js_output := revealjs/index.html
 reveal_js_variables := theme=sky
@@ -12,8 +14,8 @@ reveal_js_slide_level := 2
 beamer_slide_level := 2
 beamer_output := beamer/talk.pdf
 
-reveal_js_build_command := $(pandoc) -t revealjs -s $(slide_src) -o $(reveal_js_output) --slide-level $(reveal_js_slide_level) -V $(reveal_js_variables)
-beamer_build_command := $(pandoc) -t beamer -s $(slide_src) -o $(beamer_output) --slide-level $(beamer_slide_level)
+reveal_js_build_command := $(pandoc) -f $(input_format) -t revealjs -s $(slide_src) -o $(reveal_js_output) --slide-level $(reveal_js_slide_level) -V $(reveal_js_variables)
+beamer_build_command := $(pandoc) -f $(input_format) -t beamer -s $(slide_src) -o $(beamer_output) --slide-level $(beamer_slide_level)
 
 # Nice Shiny Colors....
 # Colour table:

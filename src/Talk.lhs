@@ -8,9 +8,16 @@ Partiality
 Module Header
 
 >   module Talk where
+>   import LocalPrelude
 >   import Prelude ( undefined )
+>   import Control.Lens ( Prism, prism, over )
+>   import Data.Either ( Either(..) )
+>   import Data.List.NonEmpty ( NonEmpty(..), nonEmpty )
+>   import Data.Maybe ( Maybe, maybe )
 
 -----------
+
+It starts off so innocently:
 
 ``` Haskell
 head' :: [a] -> a
@@ -28,17 +35,13 @@ Whats the problem?
 "Just don't give it an empty list."
     - Some Pragmatic Programmer
 
------------------
-
-Partial functions are convenient to write, inconvenient to trust.
-
-Total functions give complete coverage of the domains they promise to cover.
 
 The Rabbit Hole
 ===============
 
-Adulterate the output
 ---------------------
+
+First we learn about `Maybe`, adulterate the type to add a rug to sweep the unwanted kernel under.
 
 ``` Haskell
 head' :: [a] -> Maybe a
@@ -52,64 +55,110 @@ tail' []        = Nothing
 
 ------------------
 
-When we qualify our types we tend to adulterate them
-
-------------------
+We have abstractions to propagate things like `Maybe` to the end of the control flow:
 
 ``` Haskell
-data Maybe a =
-        Nothing
-    |   Just a
-```
+class Functor f where
+    fmap :: (a -> b) -> f a -> f b
 
------------------
-
-``` Haskell
-data Either a b =
-        Left a
-    |   Right b
-```
-
------------------
-
-``` Haskell
-data [] a =
-        []
-    |   a : [a]
-```
-
-----------------
-
-``` Haskell
-data State s a = State { runState :: s -> (a, s) }
-```
-
-An exception
-------------
-
-``` Haskell
-data Const r a = Const { runConst :: r }
-```
-
------------
-
-Abstractions to help us manage these types:
-
-``` Haskell
-class Applicative f where
+class (Functor f) => Applicative f where
     pure :: a -> f a
     (<*>) :: f (a -> b) -> f a -> f b
+
+liftA2
+    :: (Applicative f)
+    => (a -> b -> c)
+    -> f a -> f b -> f c
 
 class Monad m where
     return :: a -> m a
     (>>=) :: m a -> (a -> m b) -> m b
 ```
 
-Red Black Trees
-===============
+------------------
 
-Tree
----------------
+But this is just a case of an unwanted pattern, rather than adulterate the output type, we could *refine* the input type:
+
+``` Haskell
+data NonEmpty a = a :| [a]
+
+nonEmpty :: [a] -> Maybe (NonEmpty a)
+nonEmpty (x : xs)   = Just $ x :| xs
+nonEmpty []         = Nothing
+
+head' :: NonEmpty a -> a
+head' (x :| _) = x
+
+tail' :: NonEmpty a -> [a]
+tail' (_ :| xs) = xs
+```
+
+Functor
+-------
+
+And using the same machinery we can lift these simpler total functions up to the more complicated types:
+
+``` Haskell
+headl :: [a] -> Maybe a
+headl = fmap head' . nonEmpty
+
+taill :: [a] -> Maybe [a]
+taill = fmap tail' . nonEmpty
+```
+
+Applicative
+-----------
+
+``` Haskell
+liftA2
+    :: (Applicative f)
+    => (a -> b -> c)
+    -> f a -> f b -> f c
+```
+
+Monad
+-----
+
+``` Haskell
+(=<<)
+    :: (Monad m)
+    => (a -> m b)
+    -> m a -> m b
+```
+
+Lens & Traversals
+-----------------
+
+>   fromList :: [a] -> Either [b] (NonEmpty a)
+>   fromList = maybe (Left []) Right . nonEmpty
+>
+>   toList :: NonEmpty a -> [a]
+>   toList (x :| xs) = x : xs
+>
+>   _NonEmpty :: Prism [a] [b] (NonEmpty a) (NonEmpty b)
+>   _NonEmpty = prism toList fromList
+>
+>   dropTail :: NonEmpty a -> NonEmpty a
+>   dropTail (x :| _) = x :| []
+
+<   -- Provided you are happy with the "do nothing" response
+<   -- for values in the kernel of fromList
+<   over _NonEmpty
+<       :: (NonEmpty a -> NonEmpty b)
+<       -> [a] -> [b]
+
+So....
+------
+
+We have a **lot** of tools to lift functions on simpler types into functions on more complex types.
+
+This all sounds great, so where does it go wrong?
+
+Rock Bottom
+===========
+
+A Binary Tree
+-------------
 
 ``` Haskell
 data Tree a =
@@ -117,177 +166,167 @@ data Tree a =
     |   Node a (Tree a) (Tree a)
 ```
 
-Red Black Tree
+Red-Black Tree
 --------------
 
 ``` Haskell
-data Colour =
-        Red
-    |   Black
+data Colour = Red | Black
 
-data RedBlack a =
+data RBTree a =
         Leaf
-    |   Node Colour a (RedBlack a) (RedBlack a)
+    |   Node Colour a (RBTree a) (RBTree a)
 ```
 
--------------
+Oh Wait!
+---------
 
-Erm, just be careful about breaking the invariants!
+Invariants:
 
-1.  Red nodes can't have red children (leaf nodes are considered to be black).
-2.  All paths from the root to the leaf nodes must have the same number of black nodes
+1.  Red nodes have no Red Children
+2.  All paths from the root node to the leaves have the same number of black nodes
 
-There's a whole bunch of values of type `RedBlack a` that will never come up but must still
-be handled in our functions.
+Properties
+----------
 
--------------
+-   This is a common use for properties, write up your properties that check that the invariants are valid in the output.
+-   Write up your `Arbitrary` instance for your type that produces values that satisfy the invariant.
 
-Let's refine for Invariant 1:
+----------
+
+-   Sometimes, writing up code that generates the invariant satisfying values ends up being very similar to the code you are testing...
+-   On top of that concern, you have to worry about the coverage of the invariant satisfying subset.
+
+----------
 
 ``` Haskell
+insert
+    :: (Ord a)
+    => a
+    -> RBTree a
+    -> RBTree a
+
+balance
+    :: Colour
+    -> a
+    -> RBTree a
+    -> RBTree a
+    -> RBTree a
+```
+
+Let's Refine
+------------
+
+``` Haskell
+data Colour = Red | Black
+
+data RBTree a =
+        Leaf
+    |   Node Colour a (RBTree a) (RBTree a)
+```
+
+Bam!
+-------
+
+``` Haskell
+-- Ignoring Invariant 2 since we only looking at inserts
+
+data RedNode a = RedNode a (BlackNode a) (BlackNode a)
+
+-- technically, the root node is supposed to be black, so this would represent
+-- a red black tree in its final state.
 data BlackNode a =
         Leaf
     |   BlackNode a (RedBlack a) (RedBlack a)
 
-data RedNode a = RedNode a (BlackNode a) (BlackNode a)
-
 data RedBlack a = R (RedNode a) | B (BlackNode a)
 ```
 
-Non-surjectivity
-============
+--------
 
------------
-
-The image of a surjective function is equal to its codomain.
-
-The particular case of interest though is just unused patterns in the output type.
-
-This sometimes means that functions called further down the chain are forced to deal with patterns that wouldn't
-logically be possible, maybe partial functions.
-
------------
+Oh, and while we are inserting a value into the tree, the tree can be in an intermediate state where Invariant 1 is broken at the root:
 
 ``` Haskell
-data Error = InsertError | UpdateError
 
-insert :: (MonadIO m) => a -> EitherT Error m a
-insert x = do
-    insertRest <- realInsert x
-    return $ maybe (left InsertError) pure insertRest
+-- This is assumed to e representing a Red Node at the root
+data Invariant1Broken a =
+        LeftRedChild a (RedNode a) (BlackNode a)
+    |   RightRedChild a (BlackNode a) (RedNode a)
 
-insertErrorHandler :: (MonadIO m) => Error -> m a
-insertErrorHandler (InsertError) = someContextuallyValidResponse
-insertErrorHandler (UpdateError) = somethingJustNeedsToBeHere
+data InsertState a =
+        Ok (RedBlack a)
+    |   Broken (Invariant1Broken a)
 ```
 
+--------
 
-Pandoc
-======
+Wooo! Alright, now lets go rewrite those two simple yet incredibly bug prone functions!
 
-You will need Pandoc
---------------------
+--------
 
-[**Pandoc**] [pandoc] gets the Literate Haskell source file (or Markdown file) and marks it up into slides.
-
-Installing **Pandoc**
----------------------
-
--   On **Ubuntu**, you can install it with the package manager: `sudo apt-get install pandoc`
--   However if you are rendering a Literate Haskell file, you are likely to be familiar with `cabal` and `ghc`, in which case you can install it like you would any other Haskell binary off Hackage.
-
-LaTeX and Beamer
-================
-
-Installing LaTeX and Beamer
----------------------------
-
-If you wish to build the `beamer` target, you will need to install the `latex-beamer` package with:
-
-```
-sudo apt-get install latex-beamer
-```
-
-Write Slides
-============
-
------------
-
-You can write your slides in [**Github flavoured Markdown**] [github-markdown] mixed with or without [**Literate Haskell**] [lhs]
-
-Github Flavoured Markdown Example
----------------------------------
-
-A Python excerpt:
-
-``` Python
-def erp(r, x):
-    print("erpderp")
-```
-
-Literate Haskell 1 (Bird Style)
-------------------------------
-
-Ordinarily in Markdown, a `>` character at the beginning of a line would signify a quote block.
-
-When using Literate Haskell however, a `>` at the beginning of a line will signify a line of **Haskell** code that you want both marked up in the slides and compiled into the module
-
-> foldr' :: (a -> b -> b) -> b -> [a] -> b
-> foldr' _ y []     = y
-> foldr' f y (x:xs) = f x (foldr' f y xs)
-
-Literate Haskell 2
-------------------
-
-If you want to write broken code without it stopping the module from compiling, there are two ways to do it.
-
-You can start the line with a `<` char instead of a `>` char:
-
-< -- | This wouldn't compile
-< foo :: a -> b
-< foo x = x
-
-Or you can embed `Haskell` code the way you already would in Github Flavoured Markdown:
+Before
+--------
 
 ``` Haskell
--- | This would not compile either
-foo2 :: (s -> a) -> (s -> b -> t) -> (a -> b) -> s -> t
-foo2 g s w x = g s
+insert
+    :: (Ord a)
+    => a
+    -> RBTree a
+    -> RBTree a
+
+balance
+    :: Colour
+    -> a
+    -> RBTree a
+    -> RBTree a
+    -> RBTree a
 ```
 
-Building The Slides
-===================
+After
+--------
+
+``` Haskell
+balanceblackl :: a -> InsertState a -> RedBlack a -> RedBlack a
+
+balanceblackr :: a -> RedBlack a -> InsertState a -> RedBlack a
+
+fixBroken :: InsertState a -> BlackNode a
+
+ins :: (Ord a) => a -> RedBlack a -> InsertState a
+
+insBlack :: (Ord a) => a -> BlackNode a -> RedBlack a
+
+insRed :: (Ord a) => a -> RedNode a -> InsertState a
+
+joinRedl :: a -> RedBlack a -> BlackNode a -> InsertState a
+
+joinRedr :: a -> BlackNode a -> RedBlack a -> InsertState a
+
+insert :: (Ord a) => a -> BlackNode a -> BlackNode a
+```
 
 ---------
 
-`pandoc` can output a wide variety of formats, right now, the included `Makefile` only builds a small subset of them
+When the compiler finally released me I had realised I hadn't eaten for 5 days.
 
-Reveal.js
+But I **don't** have a problem.
+
 ---------
 
-Build the slides with:
+-   The Rabbit hole goes further with Invariant 2 and deletes, with `DataKinds` or `GADTs`.
+-   The deletes involve leaving the tree in an intermediate state where invariant 2 is broken.
 
-```
-make revealjs
-```
+Not going there in this talk.
 
-By default it uses the `sky` theme and sets the `slide-level` to 2
+Reflection
+==========
 
-Output goes to `revealjs/index.html`
+----------
 
-Beamer
-------
+So whats the problem here?
 
-Build the slides with:
+What's the difference between the `[a]` / `NonEmpty a` case?
 
-```
-make beamer
-```
+----------
 
-It uses the default theme and also sets the `slide-level` to 2
+-   All of the types could be injected into `RBTree a` much like `NonEmpty a` can be injected into [a].
 
-Output goes to `beamer/talk.pdf`
-
-[pandoc]: http://johnmacfarlane.net/pandoc/ "Pandoc"
-[github-markdown]: https://help.github.com/articles/github-flavored-markdown "Github flavoured Markdown"
-[lhs]: http://www.haskell.org/haskellwiki/Literate_programming

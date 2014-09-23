@@ -33,6 +33,7 @@ library
                     ,   containers
                     ,   array
                     ,   semigroups          == 0.15.*
+                    ,   lens                == 4.4.*
 
     ghc-options:        -Wall
                         -fno-warn-unused-imports
