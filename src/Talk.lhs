@@ -328,5 +328,83 @@ What's the difference between the `[a]` / `NonEmpty a` case?
 
 ----------
 
--   All of the types could be injected into `RBTree a` much like `NonEmpty a` can be injected into [a].
+-   All of the types could be injected into `RBTree a` much like `NonEmpty a` can be injected into `[a]`.
+-   But theres a conceivable use for `[a]`, values exist.
+-   Other than implementing the core operations, users of the of the data structure should never encounter values that break the invariants.
+
+Refining Types
+--------------
+
+-   So far when I "refined" a type, I had to write up a completely new distinct type.
+-   Conversions between all these different types can be potentially inefficient.
+-   To "refine" `[a]`, had to throw away the `[]` and build `NonEmpty a` from `a` again.
+
+--------------
+
+We almost always use Type constructors to adulterate types (except for `Const` and `Identity`)
+
+--------------
+
+So could we get more mileage from our types if we could qualify our types to restrict or refine them instead of adulterating them?
+
+--------------
+
+``` Haskell
+type RedNode a = { t : RBTree a | ??? }
+
+type BlackNode a = { t : RBTree a | ??? }
+
+type RedBlack a = { t : RBTree a | ??? }
+
+type InsertState a = { t : RBTree a | ??? }
+```
+
+Liquid Haskell
+==============
+
+A worked example
+----------------
+
+Red-Black Trees?
+----------------
+
+----------------
+
+Haha, goodness me no.
+
+Binomial Trees
+--------------
+
+A primitive from which Binomial heaps are built:
+
+``` Haskell
+data BinomialTree a = BinomialTree a [a]
+```
+
+Measures
+--------
+
+Liquid Haskell lets you define simple functions to use in constraints.  They can't return functions though.
+
+``` Haskell
+{-@
+    measure binTreeRank :: BinomialTree a -> Int
+    binTreeRank (BinomialTree x cs) = len cs
+@-}
+```
+
+Refined Types
+-------------
+
+Or *Liquid Types* (**L**ogically **Q**ualified **D**ata Types).
+
+Similar to Subset Types in **Coq**.
+
+``` Haskell
+{-@ type BinomialTreeN a N = {t : BinomialTree a | (binTreeRank t) = N} @-}
+```
+
+Invariants
+----------
+
 
