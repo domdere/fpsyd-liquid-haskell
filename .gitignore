@@ -32,7 +32,7 @@ internal/
 revealjs/index.html
 
 # beamer output
-beamer/talk.pdf
+beamer/RefinedTypes.pdf
 
 # liquid haskell artifacts
 .liquid/

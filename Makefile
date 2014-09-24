@@ -12,7 +12,7 @@ reveal_js_slide_level := 2
 
 # beamer parameters
 beamer_slide_level := 2
-beamer_output := beamer/talk.pdf
+beamer_output := beamer/RefinedTypes.pdf
 
 reveal_js_build_command := $(pandoc) -f $(input_format) -t revealjs -s $(slide_src) -o $(reveal_js_output) --slide-level $(reveal_js_slide_level) -V $(reveal_js_variables)
 beamer_build_command := $(pandoc) -f $(input_format) -t beamer -s $(slide_src) -o $(beamer_output) --slide-level $(beamer_slide_level)
@@ -33,9 +33,9 @@ output_colour := \x1b[0;35m
 
 .PHONY: clean
 
-beamer: $(beamer_output)
-
 all: revealjs beamer
+
+beamer: $(beamer_output)
 
 $(beamer_output): $(slide_src)
 	@$(beamer_build_command)
