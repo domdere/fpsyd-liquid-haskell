@@ -247,7 +247,8 @@ Oh, and while we are inserting a value into the tree, the tree can be in an inte
 
 ``` Haskell
 
--- This is assumed to e representing a Red Node at the root
+-- This is assumed to be representing a Red Node
+-- at the root
 data Invariant1Broken a =
         LeftRedChild a (RedNode a) (BlackNode a)
     |   RightRedChild a (BlackNode a) (RedNode a)
