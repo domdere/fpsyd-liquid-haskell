@@ -1,6 +1,6 @@
 % Refined Types
-% Dom De Re (fp-syd)
-% 24 Sept, 2014
+% Dom De Re
+% FP-Syd, 24 Sept, 2014
 
 Partiality
 ==========
@@ -372,6 +372,10 @@ Red-Black Trees?
 
 Haha, goodness me no.
 
+You can see my very very very early attempt at using `DataKinds` and `GADTs` to do it [here] [redblack]
+
+And a recent experiment with Liquid Types that doesn't quite work yet [here] [liquid-redblack].
+
 Binomial Trees
 --------------
 
@@ -508,14 +512,32 @@ link w@(BinomialTree rw x ws) z@(BinomialTree rz y zs)
 Final Thoughts
 ==============
 
-Limitations
+Pros
 -----------
 
+-   Don't have to manipulate proofs in parallel with program values.
+-   Some of the expressive capacity of Dependent Types
+
+
+Limitations 1
+-------------
+
+-   Only some of the expressive capacity of Dependent Types
 -   Can use any SMT solver backend apparently, but `z3` is the only with a reliable enough reputation
 -   `z3` is not free (Non-Commercial Research use only)
--   Using an SMT solver is a little "black boxy"
+-   Using an SMT solver is a little "black boxy", not sure I would ever want it in the compiler, don't know if that will ever take off
+    -   Then again, I didn't think the IPod was going to be a big deal.
+
+Limitations 2
+-------------
+
 -   If refined types rule out specific patterns (e.g Red Black trees), fails exhaustivity checking in GHC since the function is effectively partial as far as GHC is concerned.
--   Terrible error messages:
+-   A lot of the time, expressing properties/invariants/constraints is really just as challenging as doing so in the existing type system.
+    -   So I don't think we have solved the Type complexity problem yet.
+-   At the moment its like a separate type system running in parallel, gets a little schizophrenic.
+-   Terrible error messages
+
+------------
 
 ```
 {-@ binlength :: t : BinomialTreeList a -> {x : Int | x = (listlen t)} @-}
@@ -523,6 +545,29 @@ binlength :: BinomialTreeList a -> Int
 binlength Nil          = 0
 binlength (Cons ts _)  = 2 + binlength ts
 
+src/Data/Binomial.hs:75:26-41: Error: Liquid Type Mismatch
+   Inferred type
+     VV : Int | (VV == (?c + ?a))
 
+   not a subtype of Required type
+     VV : Int | (VV == (listlen ?b))
 
+   In Context
+     ts : (BinomialTreeList a) | ((listlen ts) >= 0)
+     ?b : (BinomialTreeList a) | ((listlen ?b) >= 0)
+     ?a : Int | (?a == (listlen ts))
+     ?c : Int | (?c == (2  :  int))
 ```
+
+References And Further Reading
+------------------------------
+
+-   [Z3] [z3]
+-   [N. Vazou, E. L. Seidel, R. Jhala, D. Vytiniotis, and S. Peyton-Jones. Refinement types for Haskell] [refinement-types]
+-   [Try Liquid Haskell - An Online Interactive Liquid Haskell Demo] [try-liquid-haskell]
+
+[redblack]: https://github.com/domdere/okasaki/blob/redblack2/src/Data/SearchTree/RedBlackTree2.hs "An attempt at RedBlack trees"
+[liquid-redblack]: https://github.com/domdere/fpsyd-liquid-haskell/blob/master/trash/Data/RedBlack.hs "Another attempt at Red Black trees with Liquid Types"
+[z3]: http://z3.codeplex.com/ "Z3 XMT Constraint Solver"
+[try-liquid-haskell]: http://goto.ucsd.edu:8090/index.html "Interactive Liquid Haskell Demo"
+[refinement-types]: http://goto.ucsd.edu/~nvazou/refinement_types_for_haskell.pdf "Refinement Types For Haskell"
