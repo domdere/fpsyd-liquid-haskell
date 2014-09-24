@@ -24,6 +24,7 @@ module Data.Binomial where
 import LocalPrelude
 
 import Data.Bool ( (&&) )
+import Data.List ( length )
 
 data BinomialTreeList a =
         Nil
