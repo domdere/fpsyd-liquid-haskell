@@ -232,8 +232,8 @@ Bam!
 
 data RedNode a = RedNode a (BlackNode a) (BlackNode a)
 
--- technically, the root node is supposed to be black, so this would represent
--- a red black tree in its final state.
+-- technically, the root node is supposed to be black, so this would
+-- represent a red black tree in its final state.
 data BlackNode a =
         Leaf
     |   BlackNode a (RedBlack a) (RedBlack a)
@@ -381,6 +381,11 @@ A primitive from which Binomial heaps are built:
 data BinomialTree a = BinomialTree a [a]
 ```
 
+Defined inductively as follows:
+
+-   Binomial tree of Rank 0 is a singleton node.
+-   A binomial tree of rank `r + 1` is formed by linking two binomial trees of rank `r`, with one becoming a child of the other.
+
 Measures
 --------
 
@@ -407,4 +412,64 @@ Similar to Subset Types in **Coq**.
 Invariants
 ----------
 
+The inductive definition results in the following invariant:
 
+-   The list of children is ordered by decreasing rank, with each element 1 rank higher than the next...
+
+---------
+
+Encode invariants into the type:
+
+``` Haskell
+data BinomialTreeList a =
+        Nil
+    |   Cons (BinomialTreeList a) (BinomialTree a)
+
+{-@
+    measure listlen :: BinomialTreeList a -> Int
+    listlen (Nil)       = 0
+    listlen (Cons xs x) = 1 + (listlen xs)
+@-}
+
+{-@
+    type BinomialTreeListN a N = {ts : BinomialTreeList a | (listlen ts) = N}
+@-}
+
+-- Invariant here
+{-@
+    data BinomialTreeList a =
+            Nil
+        |   Cons    (ts :: BinomialTreeList a)
+                    (t :: BinomialTreeListN a {(listlen ts)})
+@-}
+```
+
+---------
+
+Let's store the rank in the structure and add an invariant for that also:
+
+``` Haskell
+data BinomialTree a = BinomialTree Int a (BinomialTreeList a)
+
+{-@
+    measure binTreeRank :: BinomialTree a -> Int
+    binTreeRank (BinomialTree r x cs) = r
+@-}
+
+{-@
+    data BinomialTree a =
+        BinomialTree (r :: Int) (x :: a) (cs :: BinomialTreeListN a {r})
+@-}
+```
+
+--------
+
+Can now provide guarantees on the outputs of functions that are statically checked:
+
+``` Haskell
+{-@ rank :: v : BinomialTree a -> {x : Int | x = (binTreeRank v)} @-}
+rank :: BinomialTree a -> Int
+rank (BinomialTree r _ _) = r
+-- rank (BinomialTree _ _ cs) = length cs
+-- rank _ = 0
+```

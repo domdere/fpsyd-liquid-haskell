@@ -70,6 +70,8 @@ data BinomialTree a = BinomialTree Int a (BinomialTreeList a) deriving (Show, Eq
 {-@ rank :: v : BinomialTree a -> {x : Int | x = (binTreeRank v)} @-}
 rank :: BinomialTree a -> Int
 rank (BinomialTree r _ _) = r
+-- rank (BinomialTree _ _ cs) = length cs
+-- rank _ = 0
 
 {-@ singletonTree :: a -> BinomialTreeN a {0} @-}
 singletonTree :: a -> BinomialTree a
