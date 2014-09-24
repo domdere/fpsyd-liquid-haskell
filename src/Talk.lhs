@@ -431,13 +431,15 @@ data BinomialTreeList a =
     listlen (Cons xs x) = 1 + (listlen xs)
 @-}
 
+{-@ invariant {v : BinomialTreeList a | (listlen v) >= 0} @-}
+
 {-@
     type BinomialTreeListN a N = {ts : BinomialTreeList a | (listlen ts) = N}
 @-}
 
 -- Invariant here
 {-@
-    data BinomialTreeList a =
+    data BinomialTreeList [listlen] a =
             Nil
         |   Cons    (ts :: BinomialTreeList a)
                     (t :: BinomialTreeListN a {(listlen ts)})
@@ -467,9 +469,60 @@ data BinomialTree a = BinomialTree Int a (BinomialTreeList a)
 Can now provide guarantees on the outputs of functions that are statically checked:
 
 ``` Haskell
+{-@ binlength :: t : BinomialTreeList a -> {x : Int | x = (listlen t)} @-}
+binlength :: BinomialTreeList a -> Int
+binlength Nil          = 0
+binlength (Cons ts _)  = 1 + binlength ts
+
 {-@ rank :: v : BinomialTree a -> {x : Int | x = (binTreeRank v)} @-}
 rank :: BinomialTree a -> Int
 rank (BinomialTree r _ _) = r
--- rank (BinomialTree _ _ cs) = length cs
+-- rank (BinomialTree _ _ cs) = binlength cs
 -- rank _ = 0
+```
+
+---------
+
+Verify the inductive definition is preserved by our implementation of the core operations:
+
+``` Haskell
+-- | Singleton node defined to have rank 0
+{-@ singletonTree :: a -> BinomialTreeN a {0} @-}
+singletonTree :: a -> BinomialTree a
+singletonTree x = BinomialTree 0 x Nil
+
+-- | Rank r + 1 tree is created by linking together two rank r trees.
+{-@
+    link
+        :: (Ord a)
+        => w : BinomialTree a
+        -> z : BinomialTreeN a {(binTreeRank w)}
+        -> BinomialTreeN a {1 + (binTreeRank w)}
+@-}
+link :: BinomialTree a -> BinomialTree a -> BinomialTree a
+link w@(BinomialTree rw x ws) z@(BinomialTree rz y zs)
+    | x < y     = BinomialTree (rw + 1) x (Cons ws z)
+    | otherwise = BinomialTree (rz + 1) y (Cons zs w)
+```
+
+Final Thoughts
+==============
+
+Limitations
+-----------
+
+-   Can use any SMT solver backend apparently, but `z3` is the only with a reliable enough reputation
+-   `z3` is not free (Non-Commercial Research use only)
+-   Using an SMT solver is a little "black boxy"
+-   If refined types rule out specific patterns (e.g Red Black trees), fails exhaustivity checking in GHC since the function is effectively partial as far as GHC is concerned.
+-   Terrible error messages:
+
+```
+{-@ binlength :: t : BinomialTreeList a -> {x : Int | x = (listlen t)} @-}
+binlength :: BinomialTreeList a -> Int
+binlength Nil          = 0
+binlength (Cons ts _)  = 2 + binlength ts
+
+
+
 ```
