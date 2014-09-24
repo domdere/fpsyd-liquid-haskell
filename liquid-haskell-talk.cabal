@@ -8,8 +8,8 @@ copyright:          Copyright (C) 2014
 synopsis:           A Talk on Liquid Haskell
 category:           Data
 description:        A talk on Liquid Haskell
-homepage:           https://github.com/domdere/liquid-haskell-talk/issues
-bug-reports:        https://github.com/domdere/liquid-haskell-talk/issues
+homepage:           https://github.com/domdere/fpsyd-liquid-haskell/issues
+bug-reports:        https://github.com/domdere/fpsyd-liquid-haskell/issues
 cabal-version:      >= 1.18
 build-type:         Custom
 --extra-source-files: etc/CONTRIBUTORS,
@@ -17,7 +17,7 @@ build-type:         Custom
 
 source-repository       head
     type:               git
-    location:           https://github.com/domdere/liquid-haskell-talk
+    location:           https://github.com/domdere/fpsyd-liquid-haskell
 
 flag                    small_base
     description:        Choose the new, split-up base package.
