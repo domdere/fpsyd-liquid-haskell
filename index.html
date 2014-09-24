@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="pandoc">
+  <meta name="author" content="Dom De Re" />
+  <title>Refined Types</title>
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="stylesheet" href="reveal.js/css/reveal.min.css"/>
+    <style type="text/css">code{white-space: pre;}</style>
+    <style type="text/css">
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; }
+code > span.dt { color: #902000; }
+code > span.dv { color: #40a070; }
+code > span.bn { color: #40a070; }
+code > span.fl { color: #40a070; }
+code > span.ch { color: #4070a0; }
+code > span.st { color: #4070a0; }
+code > span.co { color: #60a0b0; font-style: italic; }
+code > span.ot { color: #007020; }
+code > span.al { color: #ff0000; font-weight: bold; }
+code > span.fu { color: #06287e; }
+code > span.er { color: #ff0000; font-weight: bold; }
+    </style>
+    <link rel="stylesheet" href="reveal.js/css/theme/simple.css" id="theme">
+    <!-- If the query includes 'print-pdf', include the PDF print sheet -->
+    <script>
+      if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = 'reveal.js/css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+      }
+    </script>
+    <!--[if lt IE 9]>
+    <script src="reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+<section>
+    <h1 class="title">Refined Types</h1>
+    <h2 class="author">Dom De Re</h2>
+    <h3 class="date">FP-Syd, 24 Sept, 2014</h3>
+</section>
+
+<section><section id="partiality" class="titleslide slide level1"><h1>Partiality</h1></section><section class="slide level2">
+
+<p>It starts off so innocently:</p>
+<pre class="sourceCode Haskell"><code class="sourceCode haskell"><span class="ot">head&#39; ::</span> [a] <span class="ot">-&gt;</span> a
+head&#39; (x <span class="fu">:</span> _)   <span class="fu">=</span> x
+head&#39; []        <span class="fu">=</span> undefined
+
+<span class="ot">tail&#39; ::</span> [a] <span class="ot">-&gt;</span> [a]
+tail&#39; (_ <span class="fu">:</span> xs)  <span class="fu">=</span> xs
+tail&#39; []        <span class="fu">=</span> undefined</code></pre>
+</section><section id="whats-the-problem" class="slide level2">
+<h1>Whats the problem?</h1>
+<p>&quot;Just don't give it an empty list.&quot; - Some Pragmatic Programmer</p>
+</section></section>
+<section><section id="the-rabbit-hole" class="titleslide slide level1"><h1>The Rabbit Hole</h1></section><section class="slide level2">
+
+<p>First we learn about <code>Maybe</code>, adulterate the type to add a rug to sweep the unwanted kernel under.</p>
+<pre class="sourceCode Haskell"><code class="sourceCode haskell"><span class="ot">head&#39; ::</span> [a] <span class="ot">-&gt;</span> <span class="dt">Maybe</span> a
+head&#39; (x <span class="fu">:</span> _)   <span class="fu">=</span> <span class="dt">Just</span> x
+head&#39; []        <span class="fu">=</span> <span class="dt">Nothing</span>
+
+<span class="ot">tail&#39; ::</span> [a] <span class="ot">-&gt;</span> <span class="dt">Maybe</span> [a]
+tail&#39; (_ <span class="fu">:</span> xs)  <span class="fu">=</span> <span class="dt">Just</span> xs
+tail&#39; []        <span class="fu">=</span> <span class="dt">Nothing</span></code></pre>
+</section><section class="slide level2">
+
+<p>We have abstractions to propagate things like <code>Maybe</code> to the end of the control flow:</p>
+<pre class="sourceCode Haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">Functor</span> f <span class="kw">where</span>
+<span class="ot">    fmap ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> f a <span class="ot">-&gt;</span> f b
+
+<span class="kw">class</span> (<span class="dt">Functor</span> f) <span class="ot">=&gt;</span> <span class="dt">Applicative</span> f <span class="kw">where</span>
+<span class="ot">    pure ::</span> a <span class="ot">-&gt;</span> f a
+<span class="ot">    (&lt;*&gt;) ::</span> f (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> f a <span class="ot">-&gt;</span> f b
+
+liftA2
+<span class="ot">    ::</span> (<span class="dt">Applicative</span> f)
+    <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> c)
+    <span class="ot">-&gt;</span> f a <span class="ot">-&gt;</span> f b <span class="ot">-&gt;</span> f c
+
+<span class="kw">class</span> <span class="dt">Monad</span> m <span class="kw">where</span>
+<span class="ot">    return ::</span> a <span class="ot">-&gt;</span> m a
+<span class="ot">    (&gt;&gt;=) ::</span> m a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> m b</code></pre>
+</section><section class="slide level2">
+
+<p>But this is just a case of an unwanted pattern, rather than adulterate the output type, we could <em>refine</em> the input type:</p>
+<pre class="sourceCode Haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">NonEmpty</span> a <span class="fu">=</span> a <span class="fu">:|</span> [a]
+
+<span class="ot">nonEmpty ::</span> [a] <span class="ot">-&gt;</span> <span class="dt">Maybe</span> (<span class="dt">NonEmpty</span> a)
+nonEmpty (x <span class="fu">:</span> xs)   <span class="fu">=</span> <span class="dt">Just</span> <span class="fu">$</span> x <span class="fu">:|</span> xs
+nonEmpty []         <span class="fu">=</span> <span class="dt">Nothing</span>
+
+<span class="ot">head&#39; ::</span> <span class="dt">NonEmpty</span> a <span class="ot">-&gt;</span> a
+head&#39; (x <span class="fu">:|</span> _) <span class="fu">=</span> x
+
+<span class="ot">tail&#39; ::</span> <span class="dt">NonEmpty</span> a <span class="ot">-&gt;</span> [a]
+tail&#39; (_ <span class="fu">:|</span> xs) <span class="fu">=</span> xs</code></pre>
+</section><section id="functor" class="slide level2">
+<h1>Functor</h1>
+<p>And using the same machinery we can lift these simpler total functions up to the more complicated types:</p>
+<pre class="sourceCode Haskell"><code class="sourceCode haskell"><span class="ot">headl ::</span> [a] <span class="ot">-&gt;</span> <span class="dt">Maybe</span> a
+headl <span class="fu">=</span> fmap head&#39; <span class="fu">.</span> nonEmpty
+
+<span class="ot">taill ::</span> [a] <span class="ot">-&gt;</span> <span class="dt">Maybe</span> [a]
+taill <span class="fu">=</span> fmap tail&#39; <span class="fu">.</span> nonEmpty</code></pre>
+</section><section id="applicative" class="slide level2">
+<h1>Applicative</h1>
+<pre class="sourceCode Haskell"><code class="sourceCode haskell">liftA2
+<span class="ot">    ::</span> (<span class="dt">Applicative</span> f)
+    <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> c)
+    <span class="ot">-&gt;</span> f a <span class="ot">-&gt;</span> f b <span class="ot">-&gt;</span> f c</code></pre>
+</section><section id="monad" class="slide level2">
+<h1>Monad</h1>
+<pre class="sourceCode Haskell"><code class="sourceCode haskell">(<span class="fu">=&lt;&lt;</span>)
+<span class="ot">    ::</span> (<span class="dt">Monad</span> m)
+    <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> m b)
+    <span class="ot">-&gt;</span> m a <span class="ot">-&gt;</span> m b</code></pre>
+</section><section id="lens-traversals" class="slide level2">
+<h1>Lens &amp; Traversals</h1>
+<pre class="sourceCode literate haskell"><code class="sourceCode haskell"><span class="ot">  fromList ::</span> [a] <span class="ot">-&gt;</span> <span class="dt">Either</span> [b] (<span class="dt">NonEmpty</span> a)
+  fromList <span class="fu">=</span> maybe (<span class="dt">Left</span> []) <span class="dt">Right</span> <span class="fu">.</span> nonEmpty
+
+<span class="ot">  toList ::</span> <span class="dt">NonEmpty</span> a <span class="ot">-&gt;</span> [a]
+  toList (x <span class="fu">:|</span> xs) <span class="fu">=</span> x <span class="fu">:</span> xs
+
+  _<span class="dt">NonEmpty</span><span class="ot"> ::</span> <span class="dt">Prism</span> [a] [b] (<span class="dt">NonEmpty</span> a) (<span class="dt">NonEmpty</span> b)
+  _<span class="dt">NonEmpty</span> <span class="fu">=</span> prism toList fromList
+
+<span class="ot">  dropTail ::</span> <span class="dt">NonEmpty</span> a <span class="ot">-&gt;</span> <span class="dt">NonEmpty</span> a
+  dropTail (x <span class="fu">:|</span> _) <span class="fu">=</span> x <span class="fu">:|</span> []</code></pre>
+<pre class="sourceCode haskell"><code class="sourceCode haskell">  <span class="co">-- Provided you are happy with the &quot;do nothing&quot; response</span>
+  <span class="co">-- for values in the kernel of fromList</span>
+  over _<span class="dt">NonEmpty</span>
+<span class="ot">      ::</span> (<span class="dt">NonEmpty</span> a <span class="ot">-&gt;</span> <span class="dt">NonEmpty</span> b)
+      <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> [b]</code></pre>
+</section><section id="so...." class="slide level2">
+<h1>So....</h1>
+<p>We have a <strong>lot</strong> of tools to lift functions on simpler types into functions on more complex types.</p>
+<p>This all sounds great, so where does it go wrong?</p>
+</section></section>
+<section><section id="rock-bottom" class="titleslide slide level1"><h1>Rock Bottom</h1></section><section id="a-binary-tree" class="slide level2">
+<h1>A Binary Tree</h1>
+<pre class="sourceCode Haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Tree</span> a <span class="fu">=</span>
+        <span class="dt">Leaf</span>
+    <span class="fu">|</span>   <span class="dt">Node</span> a (<span class="dt">Tree</span> a) (<span class="dt">Tree</span> a)</code></pre>
+</section><section id="red-black-tree" class="slide level2">
+<h1>Red-Black Tree</h1>
+<pre class="sourceCode Haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Colour</span> <span class="fu">=</span> <span class="dt">Red</span> <span class="fu">|</span> <span class="dt">Black</span>
+
+<span class="kw">data</span> <span class="dt">RBTree</span> a <span class="fu">=</span>
+        <span class="dt">Leaf</span>
+    <span class="fu">|</span>   <span class="dt">Node</span> <span class="dt">Colour</span> a (<span class="dt">RBTree</span> a) (<span class="dt">RBTree</span> a)</code></pre>
+</section><section id="oh-wait" class="slide level2">
+<h1>Oh Wait!</h1>
+<p>Invariants:</p>
+<ol type="1">
+<li>Red nodes have no Red Children</li>
+<li>All paths from the root node to the leaves have the same number of black nodes</li>
+</ol>
+</section><section id="properties" class="slide level2">
+<h1>Properties</h1>
+<ul>
+<li>This is a common use for properties, write up your properties that check that the invariants are valid in the output.</li>
+<li>Write up your <code>Arbitrary</code> instance for your type that produces values that satisfy the invariant.</li>
+</ul>
+</section><section class="slide level2">
+
+<ul>
+<li>Sometimes, writing up code that generates the invariant satisfying values ends up being very similar to the code you are testing...</li>
+<li>On top of that concern, you have to worry about the coverage of the invariant satisfying subset.</li>
+</ul>
+</section><section class="slide level2">
+
+<pre class="sourceCode Haskell"><code class="sourceCode haskell">insert
+<span class="ot">    ::</span> (<span class="dt">Ord</span> a)
+    <span class="ot">=&gt;</span> a
+    <span class="ot">-&gt;</span> <span class="dt">RBTree</span> a
+    <span class="ot">-&gt;</span> <span class="dt">RBTree</span> a
+
+balance
+<span class="ot">    ::</span> <span class="dt">Colour</span>
+    <span class="ot">-&gt;</span> a
+    <span class="ot">-&gt;</span> <span class="dt">RBTree</span> a
+    <span class="ot">-&gt;</span> <span class="dt">RBTree</span> a
+    <span class="ot">-&gt;</span> <span class="dt">RBTree</span> a</code></pre>
+</section><section id="lets-refine" class="slide level2">
+<h1>Let's Refine</h1>
+<pre class="sourceCode Haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Colour</span> <span class="fu">=</span> <span class="dt">Red</span> <span class="fu">|</span> <span class="dt">Black</span>
+
+<span class="kw">data</span> <span class="dt">RBTree</span> a <span class="fu">=</span>
+        <span class="dt">Leaf</span>
+    <span class="fu">|</span>   <span class="dt">Node</span> <span class="dt">Colour</span> a (<span class="dt">RBTree</span> a) (<span class="dt">RBTree</span> a)</code></pre>
+</section><section id="bam" class="slide level2">
+<h1>Bam!</h1>
+<pre class="sourceCode Haskell"><code class="sourceCode haskell"><span class="co">-- Ignoring Invariant 2 since we only looking at inserts</span>
+
+<span class="kw">data</span> <span class="dt">RedNode</span> a <span class="fu">=</span> <span class="dt">RedNode</span> a (<span class="dt">BlackNode</span> a) (<span class="dt">BlackNode</span> a)
+
+<span class="co">-- technically, the root node is supposed to be black, so this would</span>
+<span class="co">-- represent a red black tree in its final state.</span>
+<span class="kw">data</span> <span class="dt">BlackNode</span> a <span class="fu">=</span>
+        <span class="dt">Leaf</span>
+    <span class="fu">|</span>   <span class="dt">BlackNode</span> a (<span class="dt">RedBlack</span> a) (<span class="dt">RedBlack</span> a)
+
+<span class="kw">data</span> <span class="dt">RedBlack</span> a <span class="fu">=</span> <span class="dt">R</span> (<span class="dt">RedNode</span> a) <span class="fu">|</span> <span class="dt">B</span> (<span class="dt">BlackNode</span> a)</code></pre>
+</section><section class="slide level2">
+
+<p>Oh, and while we are inserting a value into the tree, the tree can be in an intermediate state where Invariant 1 is broken at the root:</p>
+<pre class="sourceCode Haskell"><code class="sourceCode haskell">
+<span class="co">-- This is assumed to e representing a Red Node at the root</span>
+<span class="kw">data</span> <span class="dt">Invariant1Broken</span> a <span class="fu">=</span>
+        <span class="dt">LeftRedChild</span> a (<span class="dt">RedNode</span> a) (<span class="dt">BlackNode</span> a)
+    <span class="fu">|</span>   <span class="dt">RightRedChild</span> a (<span class="dt">BlackNode</span> a) (<span class="dt">RedNode</span> a)
+
+<span class="kw">data</span> <span class="dt">InsertState</span> a <span class="fu">=</span>
+        <span class="dt">Ok</span> (<span class="dt">RedBlack</span> a)
+    <span class="fu">|</span>   <span class="dt">Broken</span> (<span class="dt">Invariant1Broken</span> a)</code></pre>
+</section><section class="slide level2">
+
+<p>Wooo! Alright, now lets go rewrite those two simple yet incredibly bug prone functions!</p>
+</section><section id="before" class="slide level2">
+<h1>Before</h1>
+<pre class="sourceCode Haskell"><code class="sourceCode haskell">insert
+<span class="ot">    ::</span> (<span class="dt">Ord</span> a)
+    <span class="ot">=&gt;</span> a
+    <span class="ot">-&gt;</span> <span class="dt">RBTree</span> a
+    <span class="ot">-&gt;</span> <span class="dt">RBTree</span> a
+
+balance
+<span class="ot">    ::</span> <span class="dt">Colour</span>
+    <span class="ot">-&gt;</span> a
+    <span class="ot">-&gt;</span> <span class="dt">RBTree</span> a
+    <span class="ot">-&gt;</span> <span class="dt">RBTree</span> a
+    <span class="ot">-&gt;</span> <span class="dt">RBTree</span> a</code></pre>
+</section><section id="after" class="slide level2">
+<h1>After</h1>
+<pre class="sourceCode Haskell"><code class="sourceCode haskell"><span class="ot">balanceblackl ::</span> a <span class="ot">-&gt;</span> <span class="dt">InsertState</span> a <span class="ot">-&gt;</span> <span class="dt">RedBlack</span> a <span class="ot">-&gt;</span> <span class="dt">RedBlack</span> a
+
+<span class="ot">balanceblackr ::</span> a <span class="ot">-&gt;</span> <span class="dt">RedBlack</span> a <span class="ot">-&gt;</span> <span class="dt">InsertState</span> a <span class="ot">-&gt;</span> <span class="dt">RedBlack</span> a
+
+<span class="ot">fixBroken ::</span> <span class="dt">InsertState</span> a <span class="ot">-&gt;</span> <span class="dt">BlackNode</span> a
+
+<span class="ot">ins ::</span> (<span class="dt">Ord</span> a) <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">RedBlack</span> a <span class="ot">-&gt;</span> <span class="dt">InsertState</span> a
+
+<span class="ot">insBlack ::</span> (<span class="dt">Ord</span> a) <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">BlackNode</span> a <span class="ot">-&gt;</span> <span class="dt">RedBlack</span> a
+
+<span class="ot">insRed ::</span> (<span class="dt">Ord</span> a) <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">RedNode</span> a <span class="ot">-&gt;</span> <span class="dt">InsertState</span> a
+
+<span class="ot">joinRedl ::</span> a <span class="ot">-&gt;</span> <span class="dt">RedBlack</span> a <span class="ot">-&gt;</span> <span class="dt">BlackNode</span> a <span class="ot">-&gt;</span> <span class="dt">InsertState</span> a
+
+<span class="ot">joinRedr ::</span> a <span class="ot">-&gt;</span> <span class="dt">BlackNode</span> a <span class="ot">-&gt;</span> <span class="dt">RedBlack</span> a <span class="ot">-&gt;</span> <span class="dt">InsertState</span> a
+
+<span class="ot">insert ::</span> (<span class="dt">Ord</span> a) <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">BlackNode</span> a <span class="ot">-&gt;</span> <span class="dt">BlackNode</span> a</code></pre>
+</section><section class="slide level2">
+
+<p>When the compiler finally released me I had realised I hadn't eaten for 5 days.</p>
+<p>But I <strong>don't</strong> have a problem.</p>
+</section><section class="slide level2">
+
+<ul>
+<li>The Rabbit hole goes further with Invariant 2 and deletes, with <code>DataKinds</code> or <code>GADTs</code>.</li>
+<li>The deletes involve leaving the tree in an intermediate state where invariant 2 is broken.</li>
+</ul>
+<p>Not going there in this talk.</p>
+</section></section>
+<section><section id="reflection" class="titleslide slide level1"><h1>Reflection</h1></section><section class="slide level2">
+
+<p>So whats the problem here?</p>
+<p>What's the difference between the <code>[a]</code> / <code>NonEmpty a</code> case?</p>
+</section><section class="slide level2">
+
+<ul>
+<li>All of the types could be injected into <code>RBTree a</code> much like <code>NonEmpty a</code> can be injected into <code>[a]</code>.</li>
+<li>But theres a conceivable use for <code>[a]</code>, values exist.</li>
+<li>Other than implementing the core operations, users of the of the data structure should never encounter values that break the invariants.</li>
+</ul>
+</section><section id="refining-types" class="slide level2">
+<h1>Refining Types</h1>
+<ul>
+<li>So far when I &quot;refined&quot; a type, I had to write up a completely new distinct type.</li>
+<li>Conversions between all these different types can be potentially inefficient.</li>
+<li>To &quot;refine&quot; <code>[a]</code>, had to throw away the <code>[]</code> and build <code>NonEmpty a</code> from <code>a</code> again.</li>
+</ul>
+</section><section class="slide level2">
+
+<p>We almost always use Type constructors to adulterate types (except for <code>Const</code> and <code>Identity</code>)</p>
+</section><section class="slide level2">
+
+<p>So could we get more mileage from our types if we could qualify our types to restrict or refine them instead of adulterating them?</p>
+</section><section class="slide level2">
+
+<pre class="sourceCode Haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">RedNode</span> a <span class="fu">=</span> { t <span class="fu">:</span> <span class="dt">RBTree</span> a <span class="fu">|</span> <span class="fu">???</span> }
+
+<span class="kw">type</span> <span class="dt">BlackNode</span> a <span class="fu">=</span> { t <span class="fu">:</span> <span class="dt">RBTree</span> a <span class="fu">|</span> <span class="fu">???</span> }
+
+<span class="kw">type</span> <span class="dt">RedBlack</span> a <span class="fu">=</span> { t <span class="fu">:</span> <span class="dt">RBTree</span> a <span class="fu">|</span> <span class="fu">???</span> }
+
+<span class="kw">type</span> <span class="dt">InsertState</span> a <span class="fu">=</span> { t <span class="fu">:</span> <span class="dt">RBTree</span> a <span class="fu">|</span> <span class="fu">???</span> }</code></pre>
+</section></section>
+<section><section id="liquid-haskell" class="titleslide slide level1"><h1>Liquid Haskell</h1></section><section id="a-worked-example" class="slide level2">
+<h1>A worked example</h1>
+</section><section id="red-black-trees" class="slide level2">
+<h1>Red-Black Trees?</h1>
+</section><section class="slide level2">
+
+<p>Haha, goodness me no.</p>
+<p>You can see my very very very early attempt at using <code>DataKinds</code> and <code>GADTs</code> to do it <a href="https://github.com/domdere/okasaki/blob/redblack2/src/Data/SearchTree/RedBlackTree2.hs" title="An attempt at RedBlack trees">here</a></p>
+<p>And a recent experiment with Liquid Types that doesn't quite work yet <a href="https://github.com/domdere/fpsyd-liquid-haskell/blob/master/trash/Data/RedBlack.hs" title="Another attempt at Red Black trees with Liquid Types">here</a>.</p>
+</section><section id="binomial-trees" class="slide level2">
+<h1>Binomial Trees</h1>
+<p>A primitive from which Binomial heaps are built:</p>
+<pre class="sourceCode Haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">BinomialTree</span> a <span class="fu">=</span> <span class="dt">BinomialTree</span> a [a]</code></pre>
+<p>Defined inductively as follows:</p>
+<ul>
+<li>Binomial tree of Rank 0 is a singleton node.</li>
+<li>A binomial tree of rank <code>r + 1</code> is formed by linking two binomial trees of rank <code>r</code>, with one becoming a child of the other.</li>
+</ul>
+</section><section id="measures" class="slide level2">
+<h1>Measures</h1>
+<p>Liquid Haskell lets you define simple functions to use in constraints. They can't return functions though.</p>
+<pre class="sourceCode Haskell"><code class="sourceCode haskell"><span class="co">{-@</span>
+<span class="co">    measure binTreeRank :: BinomialTree a -&gt; Int</span>
+<span class="co">    binTreeRank (BinomialTree x cs) = len cs</span>
+<span class="co">@-}</span></code></pre>
+</section><section id="refined-types" class="slide level2">
+<h1>Refined Types</h1>
+<p>Or <em>Liquid Types</em> (<strong>L</strong>ogically <strong>Q</strong>ualified <strong>D</strong>ata Types).</p>
+<p>Similar to Subset Types in <strong>Coq</strong>.</p>
+<pre class="sourceCode Haskell"><code class="sourceCode haskell"><span class="co">{-@ type BinomialTreeN a N = {t : BinomialTree a | (binTreeRank t) = N} @-}</span></code></pre>
+</section><section id="invariants" class="slide level2">
+<h1>Invariants</h1>
+<p>The inductive definition results in the following invariant:</p>
+<ul>
+<li>The list of children is ordered by decreasing rank, with each element 1 rank higher than the next...</li>
+</ul>
+</section><section class="slide level2">
+
+<p>Encode invariants into the type:</p>
+<pre class="sourceCode Haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">BinomialTreeList</span> a <span class="fu">=</span>
+        <span class="dt">Nil</span>
+    <span class="fu">|</span>   <span class="dt">Cons</span> (<span class="dt">BinomialTreeList</span> a) (<span class="dt">BinomialTree</span> a)
+
+<span class="co">{-@</span>
+<span class="co">    measure listlen :: BinomialTreeList a -&gt; Int</span>
+<span class="co">    listlen (Nil)       = 0</span>
+<span class="co">    listlen (Cons xs x) = 1 + (listlen xs)</span>
+<span class="co">@-}</span>
+
+<span class="co">{-@ invariant {v : BinomialTreeList a | (listlen v) &gt;= 0} @-}</span>
+
+<span class="co">{-@</span>
+<span class="co">    type BinomialTreeListN a N = {ts : BinomialTreeList a | (listlen ts) = N}</span>
+<span class="co">@-}</span>
+
+<span class="co">-- Invariant here</span>
+<span class="co">{-@</span>
+<span class="co">    data BinomialTreeList [listlen] a =</span>
+<span class="co">            Nil</span>
+<span class="co">        |   Cons    (ts :: BinomialTreeList a)</span>
+<span class="co">                    (t :: BinomialTreeListN a {(listlen ts)})</span>
+<span class="co">@-}</span></code></pre>
+</section><section class="slide level2">
+
+<p>Let's store the rank in the structure and add an invariant for that also:</p>
+<pre class="sourceCode Haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">BinomialTree</span> a <span class="fu">=</span> <span class="dt">BinomialTree</span> <span class="dt">Int</span> a (<span class="dt">BinomialTreeList</span> a)
+
+<span class="co">{-@</span>
+<span class="co">    measure binTreeRank :: BinomialTree a -&gt; Int</span>
+<span class="co">    binTreeRank (BinomialTree r x cs) = r</span>
+<span class="co">@-}</span>
+
+<span class="co">{-@</span>
+<span class="co">    data BinomialTree a =</span>
+<span class="co">        BinomialTree (r :: Int) (x :: a) (cs :: BinomialTreeListN a {r})</span>
+<span class="co">@-}</span></code></pre>
+</section><section class="slide level2">
+
+<p>Can now provide guarantees on the outputs of functions that are statically checked:</p>
+<pre class="sourceCode Haskell"><code class="sourceCode haskell"><span class="co">{-@ binlength :: t : BinomialTreeList a -&gt; {x : Int | x = (listlen t)} @-}</span>
+<span class="ot">binlength ::</span> <span class="dt">BinomialTreeList</span> a <span class="ot">-&gt;</span> <span class="dt">Int</span>
+binlength <span class="dt">Nil</span>          <span class="fu">=</span> <span class="dv">0</span>
+binlength (<span class="dt">Cons</span> ts _)  <span class="fu">=</span> <span class="dv">1</span> <span class="fu">+</span> binlength ts
+
+<span class="co">{-@ rank :: v : BinomialTree a -&gt; {x : Int | x = (binTreeRank v)} @-}</span>
+<span class="ot">rank ::</span> <span class="dt">BinomialTree</span> a <span class="ot">-&gt;</span> <span class="dt">Int</span>
+rank (<span class="dt">BinomialTree</span> r _ _) <span class="fu">=</span> r
+<span class="co">-- rank (BinomialTree _ _ cs) = binlength cs</span>
+<span class="co">-- rank _ = 0</span></code></pre>
+</section><section class="slide level2">
+
+<p>Verify the inductive definition is preserved by our implementation of the core operations:</p>
+<pre class="sourceCode Haskell"><code class="sourceCode haskell"><span class="co">-- | Singleton node defined to have rank 0</span>
+<span class="co">{-@ singletonTree :: a -&gt; BinomialTreeN a {0} @-}</span>
+<span class="ot">singletonTree ::</span> a <span class="ot">-&gt;</span> <span class="dt">BinomialTree</span> a
+singletonTree x <span class="fu">=</span> <span class="dt">BinomialTree</span> <span class="dv">0</span> x <span class="dt">Nil</span>
+
+<span class="co">-- | Rank r + 1 tree is created by linking together two rank r trees.</span>
+<span class="co">{-@</span>
+<span class="co">    link</span>
+<span class="co">        :: (Ord a)</span>
+<span class="co">        =&gt; w : BinomialTree a</span>
+<span class="co">        -&gt; z : BinomialTreeN a {(binTreeRank w)}</span>
+<span class="co">        -&gt; BinomialTreeN a {1 + (binTreeRank w)}</span>
+<span class="co">@-}</span>
+<span class="ot">link ::</span> <span class="dt">BinomialTree</span> a <span class="ot">-&gt;</span> <span class="dt">BinomialTree</span> a <span class="ot">-&gt;</span> <span class="dt">BinomialTree</span> a
+link w<span class="fu">@</span>(<span class="dt">BinomialTree</span> rw x ws) z<span class="fu">@</span>(<span class="dt">BinomialTree</span> rz y zs)
+    <span class="fu">|</span> x <span class="fu">&lt;</span> y     <span class="fu">=</span> <span class="dt">BinomialTree</span> (rw <span class="fu">+</span> <span class="dv">1</span>) x (<span class="dt">Cons</span> ws z)
+    <span class="fu">|</span> otherwise <span class="fu">=</span> <span class="dt">BinomialTree</span> (rz <span class="fu">+</span> <span class="dv">1</span>) y (<span class="dt">Cons</span> zs w)</code></pre>
+</section></section>
+<section><section id="final-thoughts" class="titleslide slide level1"><h1>Final Thoughts</h1></section><section id="pros" class="slide level2">
+<h1>Pros</h1>
+<ul>
+<li>Don't have to manipulate proofs in parallel with program values.</li>
+<li>Some of the expressive capacity of Dependent Types</li>
+</ul>
+</section><section id="limitations-1" class="slide level2">
+<h1>Limitations 1</h1>
+<ul>
+<li>Only some of the expressive capacity of Dependent Types</li>
+<li>Can use any SMT solver backend apparently, but <code>z3</code> is the only with a reliable enough reputation</li>
+<li><code>z3</code> is not free (Non-Commercial Research use only)</li>
+<li>Using an SMT solver is a little &quot;black boxy&quot;, not sure I would ever want it in the compiler, don't know if that will ever take off
+<ul>
+<li>Then again, I didn't think the IPod was going to be a big deal.</li>
+</ul></li>
+</ul>
+</section><section id="limitations-2" class="slide level2">
+<h1>Limitations 2</h1>
+<ul>
+<li>If refined types rule out specific patterns (e.g Red Black trees), fails exhaustivity checking in GHC since the function is effectively partial as far as GHC is concerned.</li>
+<li>A lot of the time, expressing properties/invariants/constraints is really just as challenging as doing so in the existing type system.
+<ul>
+<li>So I don't think we have solved the Type complexity problem yet.</li>
+</ul></li>
+<li>At the moment its like a separate type system running in parallel, gets a little schizophrenic.</li>
+<li>Terrible error messages</li>
+</ul>
+</section><section class="slide level2">
+
+<pre><code>{-@ binlength :: t : BinomialTreeList a -&gt; {x : Int | x = (listlen t)} @-}
+binlength :: BinomialTreeList a -&gt; Int
+binlength Nil          = 0
+binlength (Cons ts _)  = 2 + binlength ts
+
+src/Data/Binomial.hs:75:26-41: Error: Liquid Type Mismatch
+   Inferred type
+     VV : Int | (VV == (?c + ?a))
+
+   not a subtype of Required type
+     VV : Int | (VV == (listlen ?b))
+
+   In Context
+     ts : (BinomialTreeList a) | ((listlen ts) &gt;= 0)
+     ?b : (BinomialTreeList a) | ((listlen ?b) &gt;= 0)
+     ?a : Int | (?a == (listlen ts))
+     ?c : Int | (?c == (2  :  int))</code></pre>
+</section><section id="references-and-further-reading" class="slide level2">
+<h1>References And Further Reading</h1>
+<ul>
+<li><a href="http://z3.codeplex.com/" title="Z3 XMT Constraint Solver">Z3</a></li>
+<li><a href="http://goto.ucsd.edu/~nvazou/refinement_types_for_haskell.pdf" title="Refinement Types For Haskell">N. Vazou, E. L. Seidel, R. Jhala, D. Vytiniotis, and S. Peyton-Jones. Refinement types for Haskell</a></li>
+<li><a href="http://goto.ucsd.edu:8090/index.html" title="Interactive Liquid Haskell Demo">Try Liquid Haskell - An Online Interactive Liquid Haskell Demo</a></li>
+</ul>
+</section></section>
+    </div>
+  </div>
+
+
+  <script src="reveal.js/lib/js/head.min.js"></script>
+  <script src="reveal.js/js/reveal.min.js"></script>
+
+  <script>
+
+      // Full list of configuration options available here:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+        theme: 'sky', // available themes are in /css/theme
+        transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/fade/none
+
+        // Optional libraries used to extend on reveal.js
+        dependencies: [
+          { src: 'reveal.js/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+          { src: 'reveal.js/plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+          { src: 'reveal.js/plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } },
+//          { src: 'reveal.js/plugin/search/search.js', async: true, condition: function() { return !!document.body.classList; }, }
+//          { src: 'reveal.js/plugin/remotes/remotes.js', async: true, condition: function() { return !!document.body.classList; } }
+]});
+    </script>
+    </body>
+</html>
