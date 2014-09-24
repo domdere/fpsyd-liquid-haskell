@@ -24,7 +24,6 @@ module Data.Binomial where
 import LocalPrelude
 
 import Data.Bool ( (&&) )
-import Data.List ( length )
 
 data BinomialTreeList a =
         Nil
@@ -43,11 +42,13 @@ data BinomialTreeList a =
 
 {-@
 
-    data BinomialTreeList a =
+    data BinomialTreeList [listlen] a =
             Nil
         |   Cons (ts :: BinomialTreeList a) (t :: BinomialTreeN a {(listlen ts)})
 
 @-}
+
+{-@ invariant {v : BinomialTreeList a | (listlen v) >= 0} @-}
 
 data BinomialTree a = BinomialTree Int a (BinomialTreeList a) deriving (Show, Eq)
 
@@ -68,11 +69,16 @@ data BinomialTree a = BinomialTree Int a (BinomialTreeList a) deriving (Show, Eq
 
 @-}
 
+{-@ binlength :: t : BinomialTreeList a -> {x : Int | x = (listlen t)} @-}
+binlength :: BinomialTreeList a -> Int
+binlength Nil          = 0
+binlength (Cons ts _)  = 1 + binlength ts
+
 {-@ rank :: v : BinomialTree a -> {x : Int | x = (binTreeRank v)} @-}
 rank :: BinomialTree a -> Int
 rank (BinomialTree r _ _) = r
--- rank (BinomialTree _ _ cs) = length cs
--- rank _ = 0
+--rank (BinomialTree _ _ cs) = binlength cs
+--rank _ = 0
 
 {-@ singletonTree :: a -> BinomialTreeN a {0} @-}
 singletonTree :: a -> BinomialTree a
