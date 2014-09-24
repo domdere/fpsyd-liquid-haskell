@@ -222,7 +222,8 @@ balance
 
 <p>Oh, and while we are inserting a value into the tree, the tree can be in an intermediate state where Invariant 1 is broken at the root:</p>
 <pre class="sourceCode Haskell"><code class="sourceCode haskell">
-<span class="co">-- This is assumed to e representing a Red Node at the root</span>
+<span class="co">-- This is assumed to be representing a Red Node</span>
+<span class="co">-- at the root</span>
 <span class="kw">data</span> <span class="dt">Invariant1Broken</span> a <span class="fu">=</span>
         <span class="dt">LeftRedChild</span> a (<span class="dt">RedNode</span> a) (<span class="dt">BlackNode</span> a)
     <span class="fu">|</span>   <span class="dt">RightRedChild</span> a (<span class="dt">BlackNode</span> a) (<span class="dt">RedNode</span> a)
